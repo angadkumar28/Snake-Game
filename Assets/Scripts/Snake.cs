@@ -124,13 +124,24 @@ public class Snake : MonoBehaviour
             this.transform.position.y + (_direction.y * moveStep),
             0.0f
         );
+
+        // This rotates the head to face the direction of movement
+        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle + 90f);
     }
 
+    // THIS IS THE MERGED TRIGGER METHOD
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (Time.time - _startTime < 0.1f) return;
 
+        // 1. Handle Food
         if (other.CompareTag("Food")) {
+            // Play sound
+            if (AudioManager.instance != null) {
+                AudioManager.instance.PlaySFX(AudioManager.instance.eatSound);
+            }
+
             _score += 10;
             if (_score > _highScore) {
                 _highScore = _score;
@@ -139,12 +150,20 @@ public class Snake : MonoBehaviour
             UpdateScoreUI();
             Grow();
         } 
-        else if (other.CompareTag("Obstacle")) {
+        // 2. Handle Obstacles/Walls
+        else if (other.CompareTag("Obstacle") || other.CompareTag("Wall")) {
+            
+            // Check if it's the snake's own tail (ignore first 4 segments)
             int segmentIndex = -1;
             for (int i = 0; i < _segments.Count; i++) {
                 if (_segments[i] == other.transform) { segmentIndex = i; break; }
             }
+
             if (segmentIndex == -1 || segmentIndex >= 4) {
+                // Play crash sound
+                if (AudioManager.instance != null) {
+                    AudioManager.instance.PlaySFX(AudioManager.instance.crashSound);
+                }
                 GameOver();
             }
         }
